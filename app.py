@@ -10,9 +10,8 @@
 # 8. Export:
 #    - One Excel with all issue records (ALL_CPRF_issues.xlsx)
 #    - One Excel per ProgramLaunchName
-# 9. Color-code cells with issues:
-#    - >2 issues in a row: red (#FF0D0D)
-#    - 1–2 issues: yellow (#FFFF66)
+# 9. Color-code rows with issues:
+#    - Any row with ≥1 issue: entire row light red (#E8826F)
 # 10. Show summary table + allow ZIP download of all files
 # 11. Maintain a persistent run counter in run_counter.txt
 
@@ -81,7 +80,7 @@ st.markdown(
    - Export:
      - One combined Excel with all issue records  
      - Separate Excels by **ProgramLaunchName**  
-   - Colour cells with issues (yellow/red based on number of issues in that row)  
+   - Colour rows with issues in light red  
    - Show a summary table and let you download all files as a **ZIP**
 
 👉 To download the files, please go to the end of the page and click on **Download ZIP (ALL_CPRF_issues + ProgramLaunchName files)**.
@@ -150,7 +149,7 @@ def get_programlaunch_list_from_file(file) -> list[str]:
 
 def apply_issue_coloring(ws, data_df: pd.DataFrame):
     """
-    Apply cell background colors based on issue counts per row.
+    Apply light red background colour to entire rows that have ≥1 issue.
 
     Logic:
     - Define issues using flag columns.
@@ -161,14 +160,12 @@ def apply_issue_coloring(ws, data_df: pd.DataFrame):
         Check Phone Number -> "CONTACTNUMBER"
         Check Caste -> "CASTE"
         Check Parent Consent -> "Parent Consent"
-    - If >2 issues -> red (#FF0D0D)
-    - If 1–2 issues -> yellow (#FFFF66)
+    - Any row with ≥1 issue -> entire row light red (#E8826F)
     - Header is row 1 in Excel, data rows start at row 2.
     """
 
-    # Define colors
-    red_fill = PatternFill(start_color="FF0D0D", end_color="FF0D0D", fill_type="solid")
-    yellow_fill = PatternFill(start_color="FFFF66", end_color="FFFF66", fill_type="solid")
+    # Single light red fill
+    light_red_fill = PatternFill(start_color="E8826F", end_color="E8826F", fill_type="solid")
 
     cols = list(data_df.columns)
     col_idx_map = {col: i + 1 for i, col in enumerate(cols)}  # Excel is 1-based
@@ -198,27 +195,23 @@ def apply_issue_coloring(ws, data_df: pd.DataFrame):
     n_rows = len(data_df)
 
     for i in range(n_rows):
-        issue_cols = []
-        for col_name, mask in masks.items():
+        issue_found = False
+        for _, mask in masks.items():
             try:
                 if bool(mask.iloc[i]):
-                    issue_cols.append(col_name)
+                    issue_found = True
+                    break
             except IndexError:
                 continue
 
-        issue_count = len(issue_cols)
-        if issue_count == 0:
+        if not issue_found:
             continue
 
-        # Choose color
-        fill = red_fill if issue_count > 2 else yellow_fill
-
         excel_row = 2 + i  # row 2 is first data row
-        for col_name in issue_cols:
-            if col_name not in col_idx_map:
-                continue
-            col_index = col_idx_map[col_name]
-            ws.cell(row=excel_row, column=col_index).fill = fill
+
+        # Colour the entire row (all columns present in data_df)
+        for _, col_index in col_idx_map.items():
+            ws.cell(row=excel_row, column=col_index).fill = light_red_fill
 
 
 # -----------------------------
@@ -616,7 +609,7 @@ if run_button:
                                 zf.writestr(f"{safe_name}.xlsx", sub_buffer.getvalue())
                             # -----------------------------------------------------
 
-                    # ✅ Increment run counter only after successful export
+                    # Increment run counter only after successful export
                     new_count = increment_run_counter()
                     st.sidebar.metric("Total runs (all time)", new_count)
                     st.info(f"This tool has been run {new_count} time(s) in total.")
