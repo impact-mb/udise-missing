@@ -1,8 +1,21 @@
-# UDISE Missing Extractor (Adolescent Only)
+CPRF Data Quality Checker – Adolescent Records
 
 Streamlit app to:
-- Import raw delivery data
+
+- Import raw CPRF delivery data (all columns as text)
 - Filter to PROGRAMSUBTYPENAME = "ADOLOSCENT"
-- Identify rows with missing `School UDISE`
-- Export one Excel file per `ProgramLaunchName`
-- Provide a ZIP download + summary table
+- Identify records with missing **School UDISE**
+- Apply data-quality checks:
+  - UDISE code missing
+  - Child school name missing/null
+  - Date of birth set to 1 Jan
+  - Phone number missing/invalid (India 10-digit mobile)
+  - Caste marked as DONT KNOW / DONT WISH
+  - Parent consent missing/null
+- Export:
+  - One combined Excel: `ALL_CPRF_issues.xlsx`
+  - One Excel file per **ProgramLaunchName**
+- Add footer with report timestamp, checks applied, and app version
+- Color-code issue cells (yellow/red) based on number of issues per row
+- Provide ZIP download of all files plus an on-screen summary table
+- Maintain a persistent run counter (how many times the tool has been executed)
